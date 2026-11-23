@@ -1,0 +1,13 @@
+{
+  "name": "timecard-server",
+  "version": "1.0.0",
+  "description": "日本企業向け勤怠タイムカード（Node.js + SQLite、外部パッケージ不要）",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "create-user": "node scripts/create-user.js"
+  },
+  "engines": { "node": ">=22.13" },
+  "license": "UNLICENSED",
+  "private": true
+}

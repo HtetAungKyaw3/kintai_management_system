@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>社内ポータル</title>
+<style>
+  /* =========================================
+     カラーパレットと基本設定 (サイバー＆ダーク)
+     ========================================= */
+  :root{
+    --bg-main: #060b19;       
+    --bg-card: #0f172a;       
+    --bg-card-hover: #1e293b; 
+    --primary: #38bdf8;       
+    --primary-hover: #0ea5e9; 
+    --text: #f8fafc;          
+    --text-muted: #94a3b8;    
+    --border: #1e293b;        
+    --border-glow: #0284c7;   
+    --danger: #ef4444;        
+    --danger-bg: rgba(239, 68, 68, 0.15); 
+    --success: #10b981;
+  }
+  
+  *{box-sizing:border-box;margin:0;padding:0}
+  
+  body{
+    font-family: "Inter", "Hiragino Sans", "Yu Gothic", sans-serif;
+    background-color: var(--bg-main);
+    background-image: 
+      radial-gradient(circle at 15% 50%, rgba(56, 189, 248, 0.05), transparent 25%),
+      radial-gradient(circle at 85% 30%, rgba(56, 189, 248, 0.05), transparent 25%);
+    color: var(--text);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+
+  /* =========================================
+     ヘッダーとナビゲーション
+     ========================================= */
+  header{
+    background: rgba(6, 11, 25, 0.8);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 20px 24px;
+    position: sticky; top: 0; z-index: 50;
+  }
+  header h1{
+    font-size: 20px; font-weight: 700; letter-spacing: 1px;
+    color: var(--text);
+    text-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+  }
+  
+  nav{
+    display: flex; gap: 8px; padding: 16px 24px;
+    background: var(--bg-main); border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+  nav button{
+    border: 1px solid transparent; background: transparent; padding: 10px 20px;
+    border-radius: 8px; cursor: pointer; font-size: 14px;
+    font-weight: 600; color: var(--text-muted); transition: all 0.3s ease;
+    font-family: inherit;
+  }
+  nav button:hover { color: var(--primary); background: rgba(56, 189, 248, 0.05); }
+  nav button.active {
+    background: rgba(56, 189, 248, 0.1); color: var(--primary);
+    border-color: var(--primary);
+    box-shadow: 0 0 15px rgba(56, 189, 248, 0.2);
+  }
+
+  main{padding: 32px 24px; max-width: 1100px; margin: 0 auto;}
+  
+  /* =========================================
+     検索エリア
+     ========================================= */
+  .filter-area { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
+  .search{
+    flex: 1; min-width: 250px; padding: 14px 20px;
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 10px; font-size: 15px; color: var(--text);
+    font-family: inherit; transition: all 0.3s;
+  }
+  .search::placeholder { color: var(--text-muted); }
+  .search:focus {
+    outline: none; border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+    background: #111c33;
+  }
+
+  /* =========================================
+     共通テーブルスタイル (連絡先・勤怠両方)
+     ========================================= */
+  .table-container {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 12px; overflow-x: auto;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  }
+  .data-table { width: 100%; border-collapse: collapse; text-align: left; min-width: 800px;}
+  .data-table th, .data-table td {
+    padding: 16px; border-bottom: 1px solid var(--border); vertical-align: middle;
+  }
+  .data-table th {
+    background: #0b1324; font-size: 12px; color: var(--text-muted);
+    font-weight: 600; text-transform: uppercase; letter-spacing: 1px; white-space: nowrap;
+  }
+  .data-table tr { transition: background 0.2s; }
+  .data-table tr:hover { background: rgba(56, 189, 248, 0.03); }
+  .data-table tr:last-child td { border-bottom: none; }
+  
+  .tag{
+    display:inline-block; background: rgba(56, 189, 248, 0.1); color: var(--primary);
+    font-size: 11px; padding: 2px 8px; border-radius: 4px;
+    font-weight: 600; border: 1px solid rgba(56, 189, 248, 0.2);
+    white-space: nowrap;
+  }
+  .role-tag { background: rgba(245, 158, 11, 0.1); color: #f59e0b; border-color: rgba(245, 158, 11, 0.2); }
+  
+  .mail-link {
+    color: var(--primary); text-decoration: none; font-size: 13px; font-weight: 600;
+    transition: color 0.2s;
+  }
+  .mail-link:hover { color: #7dd3fc; text-decoration: underline; }
+
+  /* =========================================
+     書類ダウンロードカード
+     ========================================= */
+  .grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:24px}
+  .card{
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 24px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    transition: all 0.3s ease;
+    display: flex; flex-direction: column;
+    position: relative; overflow: hidden;
+  }
+  .card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--primary), transparent);
+    opacity: 0; transition: opacity 0.3s;
+  }
+  .card:hover{
+    transform: translateY(-4px);
+    border-color: var(--border-glow);
+    box-shadow: 0 10px 30px rgba(56, 189, 248, 0.1);
+  }
+  .card:hover::before { opacity: 1; }
+  
+  .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
+  .card h3{font-size: 18px; color: var(--text); letter-spacing: 0.5px; line-height: 1.4;}
+  
+  /* ダウンロードボタン */
+  .card a.download-btn, .card button.download-btn{
+    margin-top:auto; display:block; width: 100%; padding:12px;
+    background: rgba(56, 189, 248, 0.1); color: var(--primary);
+    text-align:center; border-radius: 8px; font-size:14px;
+    text-decoration:none; font-weight: 700; transition: all 0.3s ease;
+    border: 1px solid rgba(56, 189, 248, 0.3); cursor: pointer; font-family: inherit;
+  }
+  .card a.download-btn:hover, .card button.download-btn:hover{
+    background: var(--primary); color: #000;
+    box-shadow: 0 0 15px rgba(56, 189, 248, 0.4);
+  }
+
+  /* =========================================
+     勤怠管理用（名前ボタン・入力欄）
+     ========================================= */
+  .name-btn {
+    background: none; border: 1px solid transparent; cursor: pointer; text-align: left;
+    padding: 8px 12px; border-radius: 6px; display: inline-block;
+    font-family: inherit; font-weight: 700; font-size: 15px;
+    color: var(--text); transition: all 0.3s ease;
+    width: 100%;
+  }
+  .name-btn:hover { background: rgba(255, 255, 255, 0.05); }
+  
+  .name-btn.is-absent {
+    background: var(--danger-bg); color: var(--danger);
+    border-color: rgba(239, 68, 68, 0.3);
+    box-shadow: inset 0 0 10px rgba(239, 68, 68, 0.1);
+  }
+  .name-btn.is-absent:hover { background: rgba(239, 68, 68, 0.25); }
+
+  .note-input-area { display: flex; gap: 8px; align-items: center; }
+  .note-input {
+    flex: 1; padding: 10px 14px; background: #0b1324;
+    border: 1px solid var(--border); border-radius: 6px;
+    font-size: 13px; font-family: inherit; color: var(--text);
+    transition: all 0.3s;
+  }
+  .note-input::placeholder { color: #475569; }
+  .note-input:focus {
+    outline: none; border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
+  }
+  .note-save-btn {
+    background: var(--bg-card); color: var(--primary); border: 1px solid var(--primary);
+    padding: 10px 16px; border-radius: 6px; font-size: 12px;
+    font-weight: 700; cursor: pointer; transition: all 0.3s;
+    white-space: nowrap;
+  }
+  .note-save-btn:hover {
+    background: var(--primary); color: #000;
+    box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+  }
+
+  /* =========================================
+     モーダル（ポップアップ）
+     ========================================= */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(8px);
+    display: flex; justify-content: center; align-items: center;
+    z-index: 1000; opacity: 0; visibility: hidden; transition: 0.3s;
+  }
+  .modal-overlay.active { opacity: 1; visibility: visible; }
+  .modal-content {
+    background: var(--bg-card); padding: 32px; border-radius: 16px;
+    width: 90%; max-width: 400px;
+    border: 1px solid var(--border-glow);
+    box-shadow: 0 0 40px rgba(56, 189, 248, 0.15);
+    transform: translateY(20px) scale(0.95); transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .modal-overlay.active .modal-content { transform: translateY(0) scale(1); }
+  
+  .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+  .modal-header h2 { font-size: 20px; color: var(--primary); font-weight: 700; letter-spacing: 1px;}
+  .close-btn { background: none; border: none; font-size: 28px; cursor: pointer; color: var(--text-muted); transition: color 0.3s; line-height: 1; }
+  .close-btn:hover { color: var(--danger); }
+  
+  .modal-body label { display: block; font-size: 13px; margin-bottom: 8px; font-weight: 700; color: var(--text-muted); }
+  .modal-body input[type="text"], .modal-body input[type="password"], .modal-body select, .modal-body textarea {
+    width: 100%; padding: 12px 16px; margin-bottom: 20px;
+    background: #0b1324; border: 1px solid var(--border); border-radius: 8px;
+    font-size: 15px; font-family: inherit; color: var(--text); transition: all 0.3s;
+  }
+  .modal-body input:focus, .modal-body select:focus, .modal-body textarea:focus {
+    outline: none; border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+  }
+  
+  .login-btn {
+    width: 100%; padding: 14px; 
+    background: linear-gradient(135deg, #38bdf8, #0ea5e9); 
+    color: #000; border: none; border-radius: 8px; font-size: 16px; font-weight: 700;
+    cursor: pointer; transition: all 0.3s; box-shadow: 0 0 15px rgba(56, 189, 248, 0.3);
+  }
+  .login-btn:hover { 
+    background: linear-gradient(135deg, #7dd3fc, #38bdf8);
+    box-shadow: 0 0 25px rgba(56, 189, 248, 0.6);
+    transform: translateY(-1px);
+  }
+  .login-btn:active { transform: scale(0.98); }
+  
+  .error-msg { color: var(--danger); font-size: 13px; margin-bottom: 16px; display: none; text-align: center; font-weight: 600;}
+  
+  .result-area {
+    background: #0b1324; padding: 20px; border-radius: 8px;
+    text-align: center; border: 1px dashed var(--border-glow);
+  }
+
+  .hidden{display:none}
+</style>
+</head>
+<body>
+
+<header><h1>🏢 社内ポータル</h1></header>
+
+<nav>
+  <button class="active" data-tab="contacts">👥 社員連絡先</button>
+  <button data-tab="attendance">⏱️ 勤怠管理 (Attendance)</button>
+  <button data-tab="docs">📁 書類リンク・ダウンロード</button>
+  <button data-tab="'">⏱️ 勤怠タイムカード</button>
+</nav>
+
+<main>
+  <!-- 検索エリア -->
+  <div class="filter-area" id="filter-area">
+    <input class="search" id="search" placeholder="🔍 名前・ふりがな・部署・メールで検索...">
+  </div>
+
+  <!-- 1. 連絡先ページ -->
+  <section id="contacts" class="hidden">
+    <div class="table-container">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th style="width: 20%;">氏名</th>
+            <th style="width: 30%;">部署</th>
+            <th style="width: 10%;">役職</th>
+            <th style="width: 15%;">携帯番号</th>
+            <th style="width: 25%;">メールアドレス</th>
+          </tr>
+        </thead>
+        <tbody id="contacts-tbody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 2. 勤怠管理ページ -->
+  <section id="attendance" class="hidden">
+    <p style="font-size: 13px; color: var(--primary); margin-bottom: 16px; background: rgba(56, 189, 248, 0.1); padding: 12px 16px; border-radius: 8px; border-left: 3px solid var(--primary);">
+      💡 <strong>操作ガイド</strong><br>
+      名前をクリックすると「欠勤（赤）」と「出社（グレー）」が切り替わります。<br>
+      連絡事項の欄に直接入力して「保存」を押すと、理由が登録され自動的に欠勤（赤）になります。
+    </p>
+    <div class="table-container">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th style="width: 25%;">氏名</th>
+            <th style="width: 40%;">休みの理由・連絡事項</th>
+            <th>部署</th>
+            <th>役職</th>
+          </tr>
+        </thead>
+        <tbody id="attendance-tbody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 3. 書類ページ -->
+  <section id="docs" class="grid hidden"></section>
+</main>
+
+<!-- ▼▼ 給与明細用のモーダル ▼▼ -->
+<div class="modal-overlay" id="salary-modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2 id="modal-title">給与明細 ログイン</h2>
+      <button class="close-btn" onclick="closeModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p class="error-msg" id="login-error">IDまたはパスワードが間違っています。</p>
+      <div id="login-section">
+        <label for="login-id">社員ID</label>
+        <input type="text" id="login-id" placeholder="例: hiramatsu">
+        <label for="login-pwd">パスワード</label>
+        <input type="password" id="login-pwd" placeholder="パスワードを入力">
+        <button class="login-btn" onclick="handleLogin()">ログイン</button>
+      </div>
+      <div id="download-section" style="display: none;">
+        <p style="margin-bottom: 20px; font-weight: 700; color: var(--primary); font-size: 16px;">
+          👤 <span id="display-user-name"></span> さん
+        </p>
+        <label for="modal-year">対象の年を選択</label>
+        <select id="modal-year"><option value="">-- 選択してください --</option></select>
+        <label for="modal-month">対象の月を選択</label>
+        <select id="modal-month">
+          <option value="">-- 選択してください --</option>
+          <option value="1">1月</option><option value="2">2月</option><option value="3">3月</option>
+          <option value="4">4月</option><option value="5">5月</option><option value="6">6月</option>
+          <option value="7">7月</option><option value="8">8月</option><option value="9">9月</option>
+          <option value="10">10月</option><option value="11">11月</option><option value="12">12月</option>
+        </select>
+        <div class="result-area" id="modal-result">年と月を選択してください。</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ▼▼ データ ▼▼
+const contacts = [
+  {id:"hiramatsu", name:"平松 孝裕", furigana:"ひらまつ たかひろ", dept:"-", role:"社長", tel:"090-5432-1986", mail:"t.hiramatsu@swingbytech.co.jp", isAbsent:false, note:""},
+  {id:"motomura", name:"本村 和大", furigana:"もとむら かずひろ", dept:"ITサービス事業本部 システム開発事業部", role:"", tel:"080-7303-8055", mail:"k.motomura@swingbytech.co.jp", isAbsent:false, note:""},
+  {id:"saito", name:"齊藤 海斗", furigana:"さいとう かいと", dept:"ITサービス事業本部", role:"", tel:"080-4383-7302", mail:"k.saito@swingbytech.co.jp", isAbsent:true, note:"体調不良のため本日欠勤。"},
+  {id:"oikawa", name:"及川 美桜", furigana:"おいかわ みお", dept:"ITサービス事業本部", role:"", tel:"080-3151-0137", mail:"m.oikawa@swingbytech.co.jp", isAbsent:false, note:""},
+  {id:"shimada", name:"島田 大樹", furigana:"しまだ だいき", dept:"ITサービス事業本部", role:"課長", tel:"080-4803-4710", mail:"d.shimada@swingbytech.co.jp", isAbsent:false, note:""},
+  {id:"izumi", name:"和泉 愛結夢", furigana:"いずみ あゆむ", dept:"ITサービス事業本部", role:"", tel:"080-7376-8207", mail:"a.izumi@swingbytech.co.jp", isAbsent:true, note:"有給休暇を取得。"},
+  {id:"moriya", name:"守屋 舞", furigana:"もりや まい", dept:"ITサービス事業本部 システム開発事業部", role:"", tel:"080-3151-1679", mail:"m.moriya@swingbytech.co.jp", isAbsent:false, note:""},
+  {id:"takahashi", name:"髙橋 絢音", furigana:"たかはし あやね", dept:"ITサービス事業本部 システム開発事業部", role:"", tel:"080-7491-1872", mail:"a.takahashi@swingbytech.co.jp", isAbsent:false, note:"午後から出社予定。"},
+  {id:"suetsugu", name:"末継 嵩浩", furigana:"すえつぐ たかひろ", dept:"ITサービス事業本部 システム開発事業部", role:"", tel:"080-7574-5183", mail:"t.suetsugu@swingbytech.co.jp", isAbsent:false, note:""},
+  {id:"kishishita", name:"岸下 翼", furigana:"きしした つばさ", dept:"ITサービス事業本部 システム開発事業部", role:"", tel:"090-8453-4966", mail:"t.kishishita@swingbytech.co.jp", isAbsent:false, note:""},
+  {id:"kiuchi", name:"城内 優芽", furigana:"きうち ゆめ", dept:"ITサービス事業本部", role:"", tel:"090-8453-5139", mail:"y.kiuchi@swingbytech.co.jp", isAbsent:true, note:"私用のため早退します。"},
+  {id:"imakita", name:"今喜多 賢治", furigana:"いまきた けんじ", dept:"ITサービス事業本部 システム開発事業部", role:"主任", tel:"080-7659-4729", mail:"k.imakita@swingbytech.co.jp", isAbsent:false, note:""},
+  {id:"ouchi", name:"大内 模", furigana:"おおうち まき", dept:"ITサービス事業本部 システム開発事業部", role:"", tel:"090-8453-4738", mail:"m.ouchi@swingbytech.co.jp", isAbsent:false, note:""},
+  {id:"arano", name:"新野 勇", furigana:"あらの いさむ", dept:"ITサービス事業本部 システム開発事業部", role:"係長", tel:"080-4715-9564", mail:"i.arano@swingbytech.co.jp", isAbsent:false, note:""},
+  {id:"tsubomizu", name:"坪水 政樹", furigana:"つぼみず まさき", dept:"ITサービス事業本部 システム開発事業部", role:"", tel:"080-7574-3798", mail:"m.tsubomizu@swingbytech.co.jp", isAbsent:true, note:"家族の看病のため欠勤。"},
+  {id:"kitamura", name:"北村 壮太", furigana:"きたむら そうた", dept:"ITサービス事業本部 システム開発事業部", role:"", tel:"080-4877-1822", mail:"s.kitamura@swingbytech.co.jp", isAbsent:false, note:""},
+  {id:"nagai", name:"永井 亮輔", furigana:"ながい りょうすけ", dept:"ITサービス事業本部 システム基盤事業部", role:"", tel:"090-8453-5098", mail:"r.nagai@swingbytech.co.jp", isAbsent:false, note:""},
+  {id:"matsuda", name:"松田 渚", furigana:"まつだ なぎさ", dept:"ITサービス事業本部 システム基盤事業部", role:"", tel:"080-7838-5664", mail:"n.matsuda@swingbytech.co.jp", isAbsent:false, note:""},
+  {id:"ito", name:"伊藤 藍生", furigana:"いとう あおい", dept:"ITサービス事業本部 システム開発事業部", role:"", tel:"080-7687-8487", mail:"a.ito@swingbytech.co.jp", isAbsent:false, note:""},
+  {id:"jin", name:"神 晃留", furigana:"じん ひかる", dept:"ITサービス事業本部 システム開発事業部", role:"", tel:"080-7276-3559", mail:"h.jin@swingbytech.co.jp", isAbsent:false, note:""},
+  {id:"tokuda", name:"徳田 悦幸", furigana:"とくだ よしゆき", dept:"ITサービス事業本部 システム開発事業部", role:"", tel:"080-4790-7386", mail:"y.tokuda@swingbytech.co.jp", isAbsent:false, note:""},
+  {id:"nara", name:"奈良 蓮", furigana:"なら れん", dept:"ITサービス事業本部 システム開発事業部", role:"", tel:"080-3539-8896", mail:"r.nara@swingbytech.co.jp", isAbsent:false, note:""},
+  {id:"dobashi", name:"土橋 誠志", furigana:"どばし さとし", dept:"ITサービス事業本部 システム開発事業部", role:"", tel:"090-8453-5114", mail:"s.dobashi@swingbytech.co.jp", isAbsent:false, note:""},
+  {id:"htetaung", name:"Htet Aung Kyaw", furigana:"テアウンテョー", dept:"ITサービス事業本部 システム開発事業部", role:"", tel:"080-3531-4469", mail:"K.htetaung@swingbytech.co.jp", isAbsent:true, note:"ビザ更新手続きのため休暇。"}
+];
+
+// ▼▼ メタ情報を削除した書類データ ▼▼
+const docs = [
+  {type:"normal", title:"就業規則", cat:"人事", url:"https://example.com/rule.pdf", desc:"休暇規定など"},
+  {type:"normal", title:"経費精算マニュアル", cat:"経理", url:"https://example.com/expense.pdf", desc:"交通費の精算"},
+  
+  // 追加したExcel書類（メタ情報なし）
+  {
+    type:"normal", 
+    title:"勤務報告書（原本）", 
+    cat:"勤怠", 
+    url:"勤務報告書_氏名（2026年10月）原本.xlsx", 
+    desc:"日々の勤務時間や休憩時間、経費を報告するためのシートです。"
+  },
+  {
+    type:"normal", 
+    title:"旅費交通費申請書（改良版）", 
+    cat:"経費", 
+    url:"旅費交通費申請書_氏名（2026年10月_30日）改良版.xlsx", 
+    desc:"月間の通勤や外出にかかる交通費を申請するためのシートです。"
+  },
+
+  // 給与明細
+  {type:"salary", title:"給与明細 (Salary)", cat:"給与", desc:"ログインして対象の年月をダウンロードします。"}
+];
+
+const employeeData = {
+  "hiramatsu": { name: "平松 孝裕", password: "pass123", salaries: [{ year: 2024, month: 10, url: "https://example.com/salary_hiramatsu_202410.pdf" }] },
+  "motomura": { name: "本村 和大", password: "pass456", salaries: [{ year: 2024, month: 10, url: "https://example.com/salary_motomura_202410.pdf" }] }
+};
+// ▲▲ データここまで ▲▲
+
+const contactsEl = document.getElementById('contacts');
+const contactsTbody = document.getElementById('contacts-tbody');
+const docsEl = document.getElementById('docs');
+const attendanceEl = document.getElementById('attendance');
+const attendanceTbody = document.getElementById('attendance-tbody');
+const searchInput = document.getElementById('search');
+const filterArea = document.getElementById('filter-area');
+
+// 給与明細用
+const modal = document.getElementById('salary-modal');
+const loginSection = document.getElementById('login-section');
+const downloadSection = document.getElementById('download-section');
+const loginError = document.getElementById('login-error');
+const modalTitle = document.getElementById('modal-title');
+const loginId = document.getElementById('login-id');
+const loginPwd = document.getElementById('login-pwd');
+const modalYear = document.getElementById('modal-year');
+const modalMonth = document.getElementById('modal-month');
+const modalResult = document.getElementById('modal-result');
+let currentUser = null;
+
+// ▼▼ 1. 連絡先テーブルの描画 ▼▼
+function renderContacts(list){
+  contactsTbody.innerHTML = list.map(c => `
+    <tr>
+      <td>
+        <div style="font-weight: 700; color: var(--text); font-size: 15px;">${c.name}</div>
+        <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">${c.furigana}</div>
+      </td>
+      <td>
+        ${c.dept !== "-" ? `<span class="tag">${c.dept}</span>` : '-'}
+      </td>
+      <td>
+        ${c.role ? `<span class="tag role-tag">${c.role}</span>` : '-'}
+      </td>
+      <td>
+        <span style="font-family: monospace; font-size: 14px; color: var(--text-muted);">${c.tel}</span>
+      </td>
+      <td>
+        <a href="mailto:${c.mail}" class="mail-link">${c.mail}</a>
+      </td>
+    </tr>
+  `).join('') || '<tr><td colspan="5" style="text-align:center; padding: 32px;">該当者なし</td></tr>';
+}
+
+// ▼▼ 2. 勤怠管理テーブルの描画 ▼▼
+function renderAttendance(list) {
+  attendanceTbody.innerHTML = list.map(c => {
+    const absentClass = c.isAbsent ? 'is-absent' : '';
+
+    let noteHtml = `
+      <div class="note-input-area">
+        <input type="text" class="note-input" id="note-input-${c.id}" 
+               value="${c.note}" placeholder="理由・連絡事項を入力..." 
+               onkeypress="if(event.key === 'Enter') saveNoteInline('${c.id}')">
+        <button class="note-save-btn" onclick="saveNoteInline('${c.id}')">保存</button>
+      </div>
+    `;
+
+    return `
+    <tr>
+      <td>
+        <button class="name-btn ${absentClass}" onclick="toggleAbsent('${c.id}')">
+          ${c.name}
+        </button>
+        <div style="font-size:11px; color:var(--text-muted); margin-left:12px; margin-top:4px;">${c.furigana}</div>
+      </td>
+      <td>${noteHtml}</td>
+      <td>${c.dept}</td>
+      <td>${c.role || '-'}</td>
+    </tr>
+  `}).join('') || '<tr><td colspan="4" style="text-align:center; padding: 32px;">該当者なし</td></tr>';
+}
+
+// ▼▼ 3. 書類カードの描画（メタ情報なし） ▼▼
+function renderDocs(list){
+  docsEl.innerHTML = list.map(d=>{
+    if (d.type === "salary") {
+      return `
+        <div class="card">
+          <div class="card-header">
+            <h3>${d.title}</h3>
+            <span class="tag">${d.cat}</span>
+          </div>
+          <p style="margin-bottom:24px; line-height:1.5; font-size:14px; color:var(--text-muted);">${d.desc}</p>
+          <button class="download-btn" onclick="openModal()">🔐 ログインしてダウンロード</button>
+        </div>`;
+    } else {
+      return `
+        <div class="card">
+          <div class="card-header">
+            <h3>${d.title}</h3>
+            <span class="tag">${d.cat}</span>
+          </div>
+          <p style="margin-bottom:24px; line-height:1.5; font-size:14px; color:var(--text-muted);">${d.desc}</p>
+          <a href="${d.url}" class="download-btn" download>📥 ダウンロード</a>
+        </div>`;
+    }
+  }).join('') || '<p>該当する書類はありません</p>';
+}
+
+function toggleAbsent(id) {
+  const person = contacts.find(c => c.id === id);
+  if (person) {
+    person.isAbsent = !person.isAbsent;
+    updateView();
+  }
+}
+
+function saveNoteInline(id) {
+  const person = contacts.find(c => c.id === id);
+  const inputEl = document.getElementById(`note-input-${id}`);
+  if (person && inputEl) {
+    person.note = inputEl.value.trim();
+    if (person.note !== "") {
+      person.isAbsent = true;
+    }
+    updateView();
+  }
+}
+
+function updateView() {
+  const q = searchInput.value.toLowerCase();
+  
+  const filteredContacts = contacts.filter(c => {
+    return (c.name + c.furigana + c.dept + c.mail + c.note).toLowerCase().includes(q);
+  });
+  
+  const filteredDocs = docs.filter(d => (d.title + d.cat + d.desc).toLowerCase().includes(q));
+  
+  renderContacts(filteredContacts);
+  renderAttendance(filteredContacts);
+  renderDocs(filteredDocs);
+}
+
+// --- 給与明細モーダル制御 ---
+function openModal() { modal.classList.add('active'); currentUser = null; loginId.value = ""; loginPwd.value = ""; loginError.style.display = "none"; loginSection.style.display = "block"; downloadSection.style.display = "none"; modalTitle.textContent = "給与明細 ログイン"; setTimeout(() => loginId.focus(), 100); }
+function closeModal() { modal.classList.remove('active'); loginPwd.value = ""; }
+function handleLogin() {
+  const id = loginId.value.trim(); const pwd = loginPwd.value; const user = employeeData[id];
+  if (user && user.password === pwd) {
+    currentUser = user; loginError.style.display = "none"; loginSection.style.display = "none"; downloadSection.style.display = "block"; modalTitle.textContent = "給与明細の選択";
+    document.getElementById('display-user-name').textContent = user.name;
+    modalYear.innerHTML = '<option value="">-- 選択してください --</option>';
+    [...new Set(user.salaries.map(s => s.year))].sort((a,b)=>b-a).forEach(y => {
+      const opt = document.createElement('option'); opt.value = y; opt.textContent = `${y}年`; modalYear.appendChild(opt);
+    });
+    modalMonth.value = ""; modalResult.innerHTML = "年と月を選択してください。";
+  } else { loginError.style.display = "block"; loginPwd.value = ""; }
+}
+function searchSalary() {
+  if (!currentUser) return; const y = modalYear.value; const m = modalMonth.value;
+  if (!y || !m) { modalResult.innerHTML = "年と月を両方選択してください。"; return; }
+  const targetFile = currentUser.salaries.find(s => s.year == y && s.month == m);
+  if (targetFile) {
+    modalResult.innerHTML = `<p style="font-size:14px; margin-bottom:16px; color:#10b981; font-weight:bold;">対象のファイルが見つかりました。</p><a href="${targetFile.url}" class="download-btn" download="${currentUser.name}_${y}年${m}月_給与明細.pdf" style="background:var(--primary); color:#000; text-decoration:none; display:block; padding:12px; border-radius:8px; font-weight:bold;">📥 ${y}年${m}月分をダウンロード</a>`;
+  } else { modalResult.innerHTML = `<p style="color:var(--danger); font-size:14px; font-weight:bold;">${y}年${m}月の給与明細は存在しません。</p>`; }
+}
+
+modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+loginPwd.addEventListener('keypress', function (e) { if (e.key === 'Enter') handleLogin(); });
+modalYear.addEventListener('change', searchSalary);
+modalMonth.addEventListener('change', searchSalary);
+
+updateView();
+
+// タブ切替処理
+document.querySelectorAll('nav button').forEach(btn=>{
+  btn.onclick = ()=>{
+    document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    const tab = btn.dataset.tab;
+    
+    if (tab === 'contacts') {
+      contactsEl.classList.remove('hidden');
+    } else {
+      contactsEl.classList.add('hidden');
+    }
+    
+    attendanceEl.classList.toggle('hidden', tab!=='attendance');
+    docsEl.classList.toggle('hidden', tab!=='docs');
+    
+    filterArea.style.display = (tab === 'docs') ? 'none' : 'flex';
+    
+    if(tab === 'attendance') {
+      searchInput.placeholder = "🔍 名前・部署・理由で検索...";
+    } else {
+      searchInput.placeholder = "🔍 名前・ふりがな・部署・メールで検索...";
+    }
+  };
+});
+
+searchInput.addEventListener('input', updateView);
+
+// 初期表示の際、最初のタブを表示状態にするための処理
+document.getElementById('contacts').classList.remove('hidden');
+</script>
+</body>
+</html>
