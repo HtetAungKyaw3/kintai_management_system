@@ -15,4 +15,6 @@ Icon
 .TemporaryItems
 .Trashes
 .VolumeIcon.icns
-.com.apple.timemachine.donotpresent
+.com.apple.timemachine.donotpresentdata/*.db
+data/*.db-shm
+data/*.db-wal
